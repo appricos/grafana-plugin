@@ -3,6 +3,8 @@ import { css } from '@emotion/css';
 import { GrafanaTheme2 } from '@grafana/data';
 import { Button, Checkbox, ConfirmModal, Field, FieldSet, IconButton, Input, Modal, RadioButtonGroup, useStyles2 } from '@grafana/ui';
 import { attachChannel, createChannel, deleteChannel, extractErrorMessage, updateChannel } from './api';
+import { ChannelQrModal } from './ChannelQrModal';
+import { ChannelViewModal } from './ChannelViewModal';
 import { Channel, SELECTABLE_TOPICS, Topic } from './types';
 
 type Props = {
@@ -52,6 +54,9 @@ export function ChannelsSection({ pluginId, channels, onChanged, onError }: Prop
 
   const [deletingChannel, setDeletingChannel] = useState<Channel | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [qrChannel, setQrChannel] = useState<Channel | null>(null);
+  const [viewingChannel, setViewingChannel] = useState<Channel | null>(null);
 
   const resetAddForm = () => {
     setName('');
@@ -129,20 +134,27 @@ export function ChannelsSection({ pluginId, channels, onChanged, onError }: Prop
 
       {channels.map((channel) => (
         <div key={channel.id} className={s.channelRow}>
-          <div>
-            <strong>{channel.name}</strong>
-            {channel.description && <div className={s.colorWeak}>{channel.description}</div>}
-            <div className={s.colorWeak}>
-              Topics: {channel.topics.length > 0 ? channel.topics.join(', ') : 'none'}
-              {channel.acknowledgmentEnabled ? ' · Acknowledgment required' : ''}
+          <div className={s.nameCell}>
+            <IconButton name="window-grid" aria-label={`Show QR code for ${channel.name}`} onClick={() => setQrChannel(channel)} />
+            <div>
+              <strong>{channel.name}</strong>
+              {channel.description && <div className={s.colorWeak}>{channel.description}</div>}
+              <div className={s.colorWeak}>
+                Topics: {channel.topics.length > 0 ? channel.topics.join(', ') : 'none'}
+                {channel.acknowledgmentEnabled ? ' · Acknowledgment required' : ''}
+              </div>
             </div>
           </div>
           <div>
+            <IconButton name="info-circle" aria-label={`View ${channel.name}`} onClick={() => setViewingChannel(channel)} />
             <IconButton name="file-edit-alt" aria-label={`Edit ${channel.name}`} onClick={() => openEdit(channel)} />
             <IconButton name="trash-alt" aria-label={`Delete ${channel.name}`} onClick={() => setDeletingChannel(channel)} />
           </div>
         </div>
       ))}
+
+      {qrChannel && <ChannelQrModal channel={qrChannel} onDismiss={() => setQrChannel(null)} />}
+      {viewingChannel && <ChannelViewModal channel={viewingChannel} onDismiss={() => setViewingChannel(null)} />}
 
       <div className={s.addForm}>
         <RadioButtonGroup<AddMode>
@@ -237,6 +249,11 @@ const getStyles = (theme: GrafanaTheme2) => ({
     align-items: flex-start;
     padding: ${theme.spacing(1)} 0;
     border-bottom: 1px solid ${theme.colors.border.weak};
+  `,
+  nameCell: css`
+    display: flex;
+    align-items: flex-start;
+    gap: ${theme.spacing(1)};
   `,
   addForm: css`
     margin-top: ${theme.spacing(3)};
