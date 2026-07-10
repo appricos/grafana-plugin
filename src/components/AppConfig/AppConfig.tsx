@@ -4,6 +4,7 @@ import { AppPluginMeta, GrafanaTheme2, PluginConfigPageProps } from '@grafana/da
 import { Alert, Button, ConfirmModal, Field, FieldSet, Input, LoadingPlaceholder, SecretInput, useStyles2 } from '@grafana/ui';
 import { testIds } from '../testIds';
 import { ChannelsSection } from './ChannelsSection';
+import { WebhookSetupSection } from './WebhookSetupSection';
 import {
   connect,
   disconnectAccount,
@@ -215,6 +216,8 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
               Update token
             </Button>
           </FieldSet>
+
+          <WebhookSetupSection pluginId={pluginId} onError={setError} />
 
           <ChannelsSection pluginId={pluginId} channels={channels} onChanged={refreshStatusAndChannels} onError={setError} />
 

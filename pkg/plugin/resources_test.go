@@ -173,7 +173,7 @@ func TestHandleChannels_CRUD(t *testing.T) {
 			_ = json.NewDecoder(r.Body).Decode(&req)
 			_ = json.NewEncoder(w).Encode(Channel{ID: "ch_2", Name: req.Name})
 		case "/grafana-app/channels/delete":
-			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]bool{"fullyDeleted": true})
 		default:
 			t.Fatalf("unexpected adapter call: %s", r.URL.Path)
 		}
@@ -202,8 +202,55 @@ func TestHandleChannels_CRUD(t *testing.T) {
 	}
 
 	resp = callResource(t, app, http.MethodDelete, "channels/ch_2", nil)
-	if resp.Status != http.StatusNoContent {
-		t.Errorf("expected 204, got %d", resp.Status)
+	if resp.Status != http.StatusOK {
+		t.Errorf("expected 200, got %d", resp.Status)
+	}
+	var deleteResult map[string]bool
+	if err := json.Unmarshal(resp.Body, &deleteResult); err != nil {
+		t.Fatalf("decode response: %s", err)
+	}
+	if !deleteResult["fullyDeleted"] {
+		t.Errorf("expected fullyDeleted=true, got %+v", deleteResult)
+	}
+}
+
+func TestHandleWebhookConfig(t *testing.T) {
+	withMockAdapter(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/grafana-app/webhook/config/get" {
+			t.Fatalf("unexpected adapter call: %s", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"webhookUrl":      "https://adapter.appricos.com/webhooks/grafana/abc123",
+			"signatureHeader": "X-Grafana-Alerting-Signature",
+			"timestampHeader": "X-Grafana-Alerting-Timestamp",
+			"secret":          "webhook-secret-xyz",
+		})
+	})
+
+	app := newTestApp(t, backend.AppInstanceSettings{
+		DecryptedSecureJSONData: map[string]string{"managementSecret": "secret_abc"},
+	})
+
+	resp := callResource(t, app, http.MethodGet, "webhook-config", nil)
+	if resp.Status != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", resp.Status, resp.Body)
+	}
+
+	var cfg webhookConfig
+	if err := json.Unmarshal(resp.Body, &cfg); err != nil {
+		t.Fatalf("decode response: %s", err)
+	}
+	if cfg.Secret != "webhook-secret-xyz" || cfg.URL != "https://adapter.appricos.com/webhooks/grafana/abc123" {
+		t.Errorf("unexpected webhook config: %+v", cfg)
+	}
+}
+
+func TestHandleWebhookConfig_RequiresConnection(t *testing.T) {
+	app := newTestApp(t, backend.AppInstanceSettings{})
+
+	resp := callResource(t, app, http.MethodGet, "webhook-config", nil)
+	if resp.Status != http.StatusPreconditionRequired {
+		t.Errorf("expected 428 when not connected, got %d", resp.Status)
 	}
 }
 

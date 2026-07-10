@@ -216,7 +216,7 @@ export function ChannelsSection({ pluginId, channels, onChanged, onError }: Prop
       <ConfirmModal
         isOpen={!!deletingChannel}
         title="Delete channel"
-        body={`Are you sure you want to delete "${deletingChannel?.name}"? This cannot be undone.`}
+        body={`Are you sure you want to delete "${deletingChannel?.name}"? This cannot be undone. If this channel is also used by another integration (e.g. Shopify or Stripe), it will only be removed from Grafana - it will keep working there.`}
         confirmText="Delete"
         confirmButtonVariant="destructive"
         disabled={deleting}

@@ -1,7 +1,7 @@
 import { lastValueFrom } from 'rxjs';
 import { PluginMeta } from '@grafana/data';
 import { getBackendSrv } from '@grafana/runtime';
-import { AttachChannelRequest, Channel, ConnectResponse, StatusResponse, UpsertChannelRequest } from './types';
+import { AttachChannelRequest, Channel, ConnectResponse, StatusResponse, UpsertChannelRequest, WebhookConfig } from './types';
 
 async function callResource<T>(pluginId: string, method: string, path: string, data?: unknown): Promise<T> {
   const response = await getBackendSrv().fetch<T>({
@@ -38,6 +38,8 @@ export const updateChannel = (pluginId: string, id: string, req: UpsertChannelRe
 export const deleteChannel = (pluginId: string, id: string) => callResource<void>(pluginId, 'DELETE', `/channels/${id}`);
 
 export const disconnectAccount = (pluginId: string) => callResource<void>(pluginId, 'POST', '/disconnect');
+
+export const getWebhookConfig = (pluginId: string) => callResource<WebhookConfig>(pluginId, 'GET', '/webhook-config');
 
 export async function persistPluginSettings(pluginId: string, data: Partial<PluginMeta>) {
   const response = await getBackendSrv().fetch({

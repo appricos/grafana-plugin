@@ -186,8 +186,20 @@ func (c *adapterClient) UpdateChannel(ctx context.Context, req upsertChannelRequ
 	return &out, nil
 }
 
-func (c *adapterClient) DeleteChannel(ctx context.Context, id string) error {
-	return c.call(ctx, "/grafana-app/channels/delete", map[string]string{"id": id}, nil)
+type deleteChannelResponse struct {
+	// FullyDeleted is false when this Pushinator channel is still attached from another shop
+	// (channels are many-to-many with shops - see pushinator-adapter/src/db/schema.ts), in which
+	// case the adapter only unlinked it from this installation and left the real Pushinator
+	// channel and the other shop's row untouched.
+	FullyDeleted bool `json:"fullyDeleted"`
+}
+
+func (c *adapterClient) DeleteChannel(ctx context.Context, id string) (*deleteChannelResponse, error) {
+	var out deleteChannelResponse
+	if err := c.call(ctx, "/grafana-app/channels/delete", map[string]string{"id": id}, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 // attachChannelRequest links an already-existing Pushinator channel (created
@@ -219,6 +231,24 @@ type webhookStatus struct {
 func (c *adapterClient) GetWebhookStatus(ctx context.Context) (*webhookStatus, error) {
 	var out webhookStatus
 	if err := c.call(ctx, "/grafana-app/webhook/status/get", nil, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// webhookConfig is what an admin needs to manually configure a Grafana Alerting webhook contact
+// point pointed at this installation - the fallback path when autoprovisioning isn't available
+// (see resources.go's handleWebhookConfig for why that's the common case, not an edge case).
+type webhookConfig struct {
+	URL             string `json:"webhookUrl"`
+	SignatureHeader string `json:"signatureHeader"`
+	TimestampHeader string `json:"timestampHeader"`
+	Secret          string `json:"secret"`
+}
+
+func (c *adapterClient) GetWebhookConfig(ctx context.Context) (*webhookConfig, error) {
+	var out webhookConfig
+	if err := c.call(ctx, "/grafana-app/webhook/config/get", nil, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

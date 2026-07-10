@@ -146,6 +146,23 @@ func (a *App) handleStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleWebhookConfig returns everything an admin needs to manually configure a Grafana
+// Alerting webhook contact point pointed at this installation. This is the primary setup path
+// for most installs, not a rare fallback: autoprovisioning would need the `externalServiceAccounts`
+// feature toggle, which is Public preview and off by default in most Grafana instances.
+func (a *App) handleWebhookConfig(w http.ResponseWriter, r *http.Request) {
+	client, ok := a.requireConnected(w)
+	if !ok {
+		return
+	}
+	cfg, err := client.GetWebhookConfig(r.Context())
+	if err != nil {
+		writeAdapterError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, cfg)
+}
+
 // --- Notification prefix ---
 
 type setPrefixRequest struct {
@@ -280,11 +297,12 @@ func (a *App) handleDeleteChannel(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := client.DeleteChannel(r.Context(), r.PathValue("id")); err != nil {
+	result, err := client.DeleteChannel(r.Context(), r.PathValue("id"))
+	if err != nil {
 		writeAdapterError(w, err)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, map[string]bool{"fullyDeleted": result.FullyDeleted})
 }
 
 // --- Disconnect ---
@@ -311,6 +329,7 @@ func (a *App) handleDisconnect(w http.ResponseWriter, r *http.Request) {
 func (a *App) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /connect", a.handleConnect)
 	mux.HandleFunc("GET /status", a.handleStatus)
+	mux.HandleFunc("GET /webhook-config", a.handleWebhookConfig)
 	mux.HandleFunc("POST /token", a.handleSetToken)
 	mux.HandleFunc("POST /prefix", a.handleSetPrefix)
 	mux.HandleFunc("GET /channels", a.handleListChannels)
