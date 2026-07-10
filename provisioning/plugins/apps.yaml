@@ -1,0 +1,11 @@
+apiVersion: 1
+
+apps:
+  - type: 'appricos-pushinator-app'
+    org_id: 1
+    org_name: 'appricos'
+    disabled: false
+    jsonData:
+      apiUrl: http://default-url.com
+    secureJsonData:
+      apiKey: secret-key
