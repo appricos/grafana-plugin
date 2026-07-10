@@ -1,8 +1,12 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { PluginType } from '@grafana/data';
 import AppConfig, { AppConfigProps } from './AppConfig';
-import { testIds } from 'components/testIds';
+import { testIds } from '../testIds';
+import * as api from './api';
+
+jest.mock('./api');
+const mockedApi = api as jest.Mocked<typeof api>;
 
 describe('Components/AppConfig', () => {
   let props: AppConfigProps;
@@ -13,10 +17,10 @@ describe('Components/AppConfig', () => {
     props = {
       plugin: {
         meta: {
-          id: 'sample-app',
-          name: 'Sample App',
+          id: 'appricos-pushinator-app',
+          name: 'Pushinator',
           type: PluginType.app,
-          enabled: true,
+          enabled: false,
           jsonData: {},
         },
       },
@@ -24,15 +28,32 @@ describe('Components/AppConfig', () => {
     } as unknown as AppConfigProps;
   });
 
-  test('renders the "API Settings" fieldset with API key, API url inputs and button', () => {
-    const plugin = { meta: { ...props.plugin.meta, enabled: false } };
+  test('renders the Connect form when not yet connected to Pushinator', async () => {
+    mockedApi.getStatus.mockResolvedValue({ connected: false });
 
-    // @ts-ignore - We don't need to provide `addConfigPage()` and `setChannelSupport()` for these tests
-    render(<AppConfig plugin={plugin} query={props.query} />);
+    render(<AppConfig {...props} />);
 
-    expect(screen.queryByRole('group', { name: /api settings/i })).toBeInTheDocument();
-    expect(screen.queryByTestId(testIds.appConfig.apiKey)).toBeInTheDocument();
-    expect(screen.queryByTestId(testIds.appConfig.apiUrl)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /save api settings/i })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId(testIds.appConfig.connectTokenInput)).toBeInTheDocument());
+    expect(screen.getByTestId(testIds.appConfig.connectButton)).toBeInTheDocument();
+    expect(screen.queryByText(/notification prefix/i)).not.toBeInTheDocument();
+  });
+
+  test('renders status, prefix and channels once connected', async () => {
+    mockedApi.getStatus.mockResolvedValue({
+      connected: true,
+      tokenSet: true,
+      tokenLast4: '6789',
+      lastEventAt: null,
+      notificationPrefix: '[PROD]',
+    });
+    mockedApi.listChannels.mockResolvedValue([
+      { id: 'ch_1', name: 'Ops', topics: ['firing'], acknowledgmentEnabled: false },
+    ]);
+
+    render(<AppConfig {...props} />);
+
+    await waitFor(() => expect(screen.getByDisplayValue('[PROD]')).toBeInTheDocument());
+    expect(screen.getByText('Ops')).toBeInTheDocument();
+    expect(screen.getByTestId(testIds.appConfig.disconnectButton)).toBeInTheDocument();
   });
 });
