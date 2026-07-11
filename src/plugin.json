@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "app",
+  "name": "Pushinator",
+  "id": "appricos-pushinator-app",
+  "backend": true,
+  "executable": "gpx_pushinator",
+  "info": {
+    "keywords": ["alerting", "notifications", "webhook", "push notifications", "pushinator"],
+    "description": "Forwards Grafana alerts to the Pushinator app as real-time push notifications, so you get instant alerts on your phone without checking a dashboard. Connect once, then manage channels and delivery status directly from this plugin.",
+    "author": {
+      "name": "Appricos",
+      "url": "https://pushinator.com"
+    },
+    "logos": {
+      "small": "img/pushinator_1200x1200_1.png",
+      "large": "img/pushinator_1200x1200_1.png"
+    },
+    "links": [
+      {
+        "name": "Website",
+        "url": "https://pushinator.com"
+      }
+    ],
+    "screenshots": [
+      {
+        "name": "Overview",
+        "path": "img/screenshots/Overview.png"
+      },
+      {
+        "name": "Connected",
+        "path": "img/screenshots/Configuration_Connected.png"
+      },
+      {
+        "name": "Webhook setup and channels",
+        "path": "img/screenshots/Configuration_Webhook_setup.png"
+      },
+      {
+        "name": "Channel QR code",
+        "path": "img/screenshots/ScanQR.png"
+      }
+    ],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "includes": [
+    {
+      "type": "page",
+      "icon": "cog",
+      "name": "Configuration",
+      "path": "/plugins/%PLUGIN_ID%",
+      "role": "Admin",
+      "addToNav": true
+    }
+  ],
+  "dependencies": {
+    "grafanaDependency": ">=12.3.0",
+    "plugins": []
+  }
+}
