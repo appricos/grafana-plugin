@@ -13,6 +13,8 @@ jobs:
   release:
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -21,9 +23,13 @@ jobs:
 
       - uses: grafana/plugin-actions/build-plugin@build-plugin/v1.2.0
         with:
-          # go.mod requires >=1.26.4 (grafana-plugin-sdk-go's own minimum) - the action's
-          # default (1.25) is too old and GOTOOLCHAIN=local on the runner won't auto-upgrade.
-          go-version: '1.26.4'
+          # go.mod requires >=1.26.5 (Grafana's own govulncheck flagged 1.26.4 for GO-2026-5856 /
+          # GO-2026-4970, stdlib CVEs in the toolchain itself) - the action's default (1.25) is
+          # too old and GOTOOLCHAIN=local on the runner won't auto-upgrade.
+          go-version: '1.26.5'
+          # Lets reviewers verify the release was actually built by this repo's CI, not hand-
+          # assembled - addresses the validator's "no-provenance-attestation" tip.
+          attestation: true
           # Uncomment once this plugin has been approved and Grafana has granted a signing
           # level - see https://grafana.com/developers/plugin-tools/publish-a-plugin/sign-a-plugin#generate-an-access-policy-token
           # Make sure to save the token in your repository secrets first.
