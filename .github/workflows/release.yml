@@ -19,11 +19,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: grafana/plugin-actions/build-plugin@build-plugin/v1.0.2
-        # Uncomment to enable plugin signing
-        # (For more info on how to generate the access policy token see https://grafana.com/developers/plugin-tools/publish-a-plugin/sign-a-plugin#generate-an-access-policy-token)
-        #with:
-        # Make sure to save the token in your repository secrets
-        #policy_token: $
-        # Usage of GRAFANA_API_KEY is deprecated, prefer `policy_token` option above
-        #grafana_token: $
+      - uses: grafana/plugin-actions/build-plugin@build-plugin/v1.2.0
+        with:
+          # go.mod requires >=1.26.3 (grafana-plugin-sdk-go's own minimum) - the action's
+          # default (1.25) is too old and GOTOOLCHAIN=local on the runner won't auto-upgrade.
+          go-version: '1.26.3'
+          # Uncomment once this plugin has been approved and Grafana has granted a signing
+          # level - see https://grafana.com/developers/plugin-tools/publish-a-plugin/sign-a-plugin#generate-an-access-policy-token
+          # Make sure to save the token in your repository secrets first.
+          #policy_token: ${{ secrets.GRAFANA_ACCESS_POLICY_TOKEN }}
